@@ -24,6 +24,10 @@ import type { Application, Container } from 'pixi.js';
 // entirely independent of what any theme's own drawing code does - and
 // that's what was actually causing the hang reported when switching
 // away from a GPU theme once one had already loaded.
+//
+// NONE of that lifecycle logic changed in this redesign - only the UI
+// around it (a gallery grid instead of a <select>, plus a top nav) is
+// new. Touching the runtime below risks reintroducing that exact bug.
 type AnyThemeId = PixiThemeId | ThemeId;
 
 const ALL_IDS: AnyThemeId[] = [...pixiThemeIds, ...themeIds];
@@ -76,6 +80,10 @@ export default function VisualizerPage() {
   const [activeId, setActiveId] = useState<AnyThemeId>(DEFAULT_ID);
   const [helpVisible, setHelpVisible] = useState(false);
   const [hud, setHud] = useState<{ labels: string[]; hint: string }>({ labels: [], hint: '' });
+
+  // New: gallery overlay state. Starts open so the landing page reads
+  // as a gallery first - the default theme is already live behind it.
+  const [galleryOpen, setGalleryOpen] = useState(true);
 
   const runtimeRef = useRef<Runtime>({
     canvasThemes: null,
@@ -275,6 +283,15 @@ export default function VisualizerPage() {
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === 'SELECT' || target.tagName === 'INPUT')) return;
 
+      if (e.key === 'Escape') {
+        setGalleryOpen(false);
+        return;
+      }
+      if (e.key.toLowerCase() === 'g') {
+        setGalleryOpen((v) => !v);
+        return;
+      }
+
       if (isPixiId(runtime.activeId)) {
         runtime.pixiTheme?.onKey?.(e.key);
       } else {
@@ -334,18 +351,13 @@ export default function VisualizerPage() {
 
   return (
       <div ref={hostRef}>
-        <div className={`status${connected ? ' connected' : ''}`}>{status}</div>
-        <select
-            className="themeSelect"
-            value={activeId}
-            onChange={(e) => runtimeRef.current.switchTheme(e.target.value as AnyThemeId)}
-        >
-          {ALL_IDS.map((id) => (
-              <option key={id} value={id}>
-                {labelFor(id)}
-              </option>
-          ))}
-        </select>
+        <div className="topBar">
+          <div className={`status${connected ? ' connected' : ''}`}>{status}</div>
+          <div className="topBar__right">
+            <button className="pill" onClick={() => setGalleryOpen(true)}>templates</button>
+            <a className="pill" href="/editor">editor</a>
+          </div>
+        </div>
 
         {(hud.labels.length > 0 || hud.hint) && (
             <div className="hud">
@@ -367,6 +379,35 @@ export default function VisualizerPage() {
 
         <canvas ref={canvas2dRef} style={{ display: usingPixi ? 'none' : 'block' }} />
         <canvas ref={pixiCanvasRef} style={{ display: usingPixi ? 'block' : 'none' }} />
+
+        {galleryOpen && (
+            <div className="gallery" onClick={(e) => { if (e.target === e.currentTarget) setGalleryOpen(false); }}>
+              <div className="gallery__panel">
+                <div className="gallery__head">
+                  <h2>Templates</h2>
+                  <button className="gallery__close" onClick={() => setGalleryOpen(false)} aria-label="Close">
+                    ×
+                  </button>
+                </div>
+                <div className="gallery__grid">
+                  {ALL_IDS.map((id) => (
+                      <button
+                          key={id}
+                          className={`galleryCard${id === activeId ? ' is-active' : ''}`}
+                          onClick={() => {
+                            runtimeRef.current.switchTheme(id);
+                            setGalleryOpen(false);
+                          }}
+                      >
+                        <div className={`galleryCard__swatch galleryCard__swatch--${isPixiId(id) ? 'gpu' : 'canvas'}`} />
+                        <div className="galleryCard__name">{labelFor(id)}</div>
+                        <div className="galleryCard__tag">{isPixiId(id) ? 'GPU' : 'Canvas'}</div>
+                      </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+        )}
       </div>
   );
 }

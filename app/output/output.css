@@ -1,0 +1,56 @@
+.output {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    overflow: hidden;
+    cursor: none;
+}
+
+.output:hover {
+    cursor: default;
+}
+
+.output__canvasHost {
+    width: 100%;
+    height: 100%;
+}
+.output__canvasHost canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.output__waiting {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #837c99;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px;
+    text-align: center;
+    pointer-events: none;
+}
+.output__waitingHint {
+    font-size: 11.5px;
+    opacity: 0.6;
+}
+
+.output__fsBtn {
+    position: fixed;
+    bottom: 14px;
+    right: 14px;
+    background: rgba(20, 16, 30, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #ddd8ea;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.15s ease;
+}
+.output__fsBtn:hover { opacity: 1; border-color: #ff006e; }
